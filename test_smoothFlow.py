@@ -6,22 +6,16 @@ import matplotlib.pyplot as plt
 lms_src = np.random.rand(4,2)
 lms_dst =np.random.rand(4,2)
 
+vecs = lms_dst - lms_src
+
 plt.scatter(lms_src[:,0], lms_src[:,1], s=30, c='k')
 plt.scatter(lms_src[:,0], lms_src[:,1], s=10, c='r')
 plt.scatter(lms_dst[:,0], lms_dst[:,1], s=30, c='k')
 plt.scatter(lms_dst[:,0], lms_dst[:,1], s=10, c='c')
+plt.quiver(lms_src[:,0], lms_src[:,1], vecs[:,0], vecs[:,1], scale=1.0, units='xy')
+plt.axis('equal')
 plt.show()
 
-
-X = np.arange(-10, 10, 1)
-Y = np.arange(-10, 10, 1)
-U, V = np.meshgrid(X, Y)
-
-fig, ax = plt.subplots()
-q = ax.quiver(X, Y, U, V)
-ax.quiverkey(q, X=0.3, Y=1.1, U=10,  label='Quiver key, length = 10', labelpos='E')
-
-plt.show()
 
 
 flow = myFlow.InterpolateFlow()
