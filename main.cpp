@@ -1,4 +1,6 @@
+
 #include "pybind11/pybind11.h"            // Pybind11 import to define Python bindings
+
 #include "xtensor/xmath.hpp"              // xtensor import for the C++ universal functions
 #include "xtensor/xtensor.hpp"              // xtensor import for the C++ universal functions
 #include "xtensor/xarray.hpp"
@@ -9,7 +11,9 @@
 #include "xtensor-python/pyarray.hpp"     // Numpy bindings
 #include <numeric>                        // Standard library import for std::accumulate
 #include <pybind11/stl.h>
+
 #include <array>
+#include <iostream>
 
 
 #define PI 3.14159265
@@ -20,13 +24,15 @@ namespace py = pybind11;
 class InterpolateFlow{
 public:
 
+
     void                    calc_kernelLandmarks    (const xt::pyarray<float> &lms_src, const xt::pyarray<float> &lms_dst, float l= 1e-4, float s= 3.5);
     xt::xarray<float>       calc_flowAtPoint        (const xt::xarray<float> &point, const xt::pyarray<float> &lms);
     xt::pyarray<float>      get_flow                (std::array<int, 2> min, std::array<int, 2> max, const xt::pyarray<float> &lms_src);
+    void                    print();
 
 private:
-    void calc_vectorField(const xt::pyarray<float> &lms_src, const xt::pyarray<float> &lms_dst);
-//    float norm(const xt::pyarray<float> &v1, const xt::pyarray<float> &v2);
+    void                    calc_vectorField        (const xt::pyarray<float> &lms_src, const xt::pyarray<float> &lms_dst);
+
     xt::xarray<float>       G1, beta, V1;
     float                   lambda=1e-4;
     float                   sigma=3.5;
@@ -39,10 +45,12 @@ PYBIND11_MODULE(myFlow,m) {
 
     m.doc() = "moduile for building smooth image deformations from two sets of points";
     xt::import_numpy();
+
     py::class_<InterpolateFlow>(m, "InterpolateFlow")
-            .def(py::init())
-            .def("calc_kernelLandmarks", &InterpolateFlow::calc_kernelLandmarks)
-            .def("get_flow", &InterpolateFlow::get_flow);
+            .def( py::init() )
+            .def( "calc_kernelLandmarks", &InterpolateFlow::calc_kernelLandmarks )
+            .def( "get_flow", &InterpolateFlow::get_flow )
+            .def( "print", &InterpolateFlow::print);
 }
 
 
@@ -88,6 +96,7 @@ void InterpolateFlow::calc_kernelLandmarks(const xt::pyarray<float> &lms_src, co
     G.fill(0.0);
     lambda_kronecker.fill(0.0);
 
+
     for( int i=0; i< num_centroids; ++i){
         for( int j=0; j<num_centroids; ++j){
 
@@ -102,7 +111,7 @@ void InterpolateFlow::calc_kernelLandmarks(const xt::pyarray<float> &lms_src, co
     }
 
     G1      = G + lambda_kronecker;
-    beta    =  xt::linalg::inv(G1) * V1;
+    beta    =  xt::linalg::dot(xt::linalg::inv(G1),  V1);
 }
 
 void InterpolateFlow::calc_vectorField(const xt::pyarray<float> &lms_src, const xt::pyarray<float> &lms_dst) {
@@ -134,5 +143,10 @@ xt::xarray<float> InterpolateFlow::calc_flowAtPoint(const xt::xarray<float> &poi
     }
 
     return  v_r;
-//    return  xt::pyarray<float>();
+}
+
+
+void InterpolateFlow::print() {
+
+    std::cout << "Module for interpolationg sparse vector field to a dense one. Variational problem used to  solved this task" << std::endl;
 }
