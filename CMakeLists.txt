@@ -22,5 +22,9 @@ include_directories( ${pybind11_INCLUDE_DIRS} ${XTL_INCLUDE_DIR} ${PYTHON_INCLUD
 pybind11_add_module( ${PROJECT_NAME} main.cpp)
 target_link_libraries( ${PROJECT_NAME} PRIVATE pybind11::module )
 #target_link_libraries( ${PROJECT_NAME} PRIVATE pybind11::module ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME myFlow)
+set_target_properties(${PROJECT_NAME} PROPERTIES /home/morzh/CLionProjects/pySmoothDeformations/OUTPUT_NAME myFlow)
 #target_link_libraries(${targetname} xtl )
+
+
+
+#configure_file(InterpolateOpticalFlow.cpython-37m-x86_64-linux-gnu.so /home/morzh/CLionProjects/pySmoothDeformations/InterpolateOpticalFlow.cpython-37m-x86_64-linux-gnu.so COPYONLY)

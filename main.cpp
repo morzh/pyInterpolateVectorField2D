@@ -25,7 +25,7 @@ class InterpolateFlow{
 public:
 
 
-    void                    calc_kernelLandmarks    (const xt::pyarray<float> &lms_src, const xt::pyarray<float> &lms_dst, float l= 1e-4, float s= 3.5);
+    void calc_kernelLandmarks(const xt::pyarray<float> &lms_src, const xt::pyarray<float> &lms_dst, float sigma=3.5, float lmbda=1e-3);
     xt::xarray<float>       calc_flowAtPoint        (const xt::xarray<float> &point, const xt::pyarray<float> &lms);
     xt::pyarray<float>      get_flow                (std::array<int, 2> min, std::array<int, 2> max, const xt::pyarray<float> &lms_src);
     void                    print();
@@ -77,24 +77,24 @@ xt::pyarray<float> InterpolateFlow::get_flow(std::array<int, 2> min, std::array<
     return flow;
 }
 
-void InterpolateFlow::calc_kernelLandmarks(const xt::pyarray<float> &lms_src, const xt::pyarray<float> &lms_dst, float l, float s) {
+void InterpolateFlow::calc_kernelLandmarks(const xt::pyarray<float> &lms_src, const xt::pyarray<float> &lms_dst, float sigma, float lmbda) {
 
     if ( lms_src.shape() != lms_dst.shape() || lms_src.size() ==0 || lms_src.dimension() != 2 || lms_src.size() < 6 || lms_src.shape()[1] != 2)
         std::cout << "input arrays should be of the same size" <<std::endl;
 
     calc_vectorField(lms_src, lms_dst);
 
-    this->lambda    = l;
-    this->sigma     = s;
+    this->sigma     = sigma;
+    this->lambda    = lmbda;
 
     bool                debug           = false;
     unsigned long int   num_centroids   =  lms_src.shape()[0];
     xt::xarray<float>   G                = xt::xarray<float>::from_shape( {num_centroids, num_centroids});
-    xt::xarray<float>   lambda_kronecker = xt::xarray<float>::from_shape( {num_centroids, num_centroids});
+    xt::xarray<float>   kronecker = xt::xarray<float>::from_shape({num_centroids, num_centroids});
 
     G1.resize({num_centroids, num_centroids});
     G.fill(0.0);
-    lambda_kronecker.fill(0.0);
+    kronecker.fill(0.0);
 
 
     for( int i=0; i< num_centroids; ++i){
@@ -103,15 +103,20 @@ void InterpolateFlow::calc_kernelLandmarks(const xt::pyarray<float> &lms_src, co
             xt::xarray<float> c_i = xt::view(lms_src, i, xt::all());
             xt::xarray<float> c_j = xt::view(lms_src, j, xt::all());
 
-            G(i,j) =  1.0 / (2*PI* std::pow(sigma, 2)) * std::exp(-xt::linalg::norm(c_i-c_j)  / (2*std::pow(sigma, 2) ));
+            G(i,j) =  1.0 / (2*PI* sigma*sigma) * std::exp(-xt::linalg::norm(c_i-c_j)  / (2*sigma*sigma));
 
             if (i == j)
-                lambda_kronecker(i,j) = lambda;
+                kronecker(i, j) = 1.0;
         }
     }
 
-    G1      = G + lambda_kronecker;
+    G1      = G + lmbda*kronecker;
     beta    =  xt::linalg::dot(xt::linalg::inv(G1),  V1);
+
+    std::cout << "C++ version" << std::endl;
+    std::cout << G1 << std::endl;
+    std::cout << V1 << std::endl;
+    std::cout << beta << std::endl;
 }
 
 void InterpolateFlow::calc_vectorField(const xt::pyarray<float> &lms_src, const xt::pyarray<float> &lms_dst) {
@@ -121,7 +126,7 @@ void InterpolateFlow::calc_vectorField(const xt::pyarray<float> &lms_src, const 
     for (int row=0; row<lms_src.shape()[0]; ++row){
         for (int col=0; col<2; ++col){
 
-            V1(row, col) = lms_src(row, col) - lms_dst(row, col);
+            V1(row, col) =  lms_dst(row, col) - lms_src(row, col);
         }
     }
 }
